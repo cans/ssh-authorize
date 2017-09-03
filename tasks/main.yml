@@ -1,0 +1,32 @@
+---
+- name: Ensures users public key will is in local folder
+  local_action:
+    module: stat
+    path: "{{sshauthz_keys_directory}}/{{sshauthz_user_key_name}}"
+    get_md5: false
+  register: user_public_key
+  run_once: True
+
+- name: Will you lock yourself out
+  fail:
+    msg: "Your public key `{{sshauthz_user_key_name}}' was not found in `{{sshauthz_keys_directory}}'."
+  when: "user_public_key.stat.exists == False"
+
+- name: "Ensures User `~/.ssh/ directory exists"
+  file:
+    path: "{{ sshauthz_homes_dir }}/{{ sshauthz_user }}/{{ sshauthz_ssh_config_dirname }}"
+    owner: "{{ sshauthz_user }}"
+    group: "{{ sshauthz_group }}"  # TODO: add variable for this.
+    mode: "0700"
+    state: "directory"
+  become: yes  # Because priviledged user itself cannot write in other users home.
+
+- name: Ensures authorized keys are present (for user {{sshauthz_user}})
+  assemble:
+    src: "{{sshauthz_keys_directory}}"
+    remote_src: "{{ sshauthz_remote_keys|default(false) }}"
+    dest: "{{ sshauthz_homes_dir }}/{{ sshauthz_user }}/{{ sshauthz_ssh_config_dirname }}/{{ sshauthz_authorized_keys_filename }}"
+  become: yes
+
+
+# vim: et:sw=2:syntax=yaml:ts=2:

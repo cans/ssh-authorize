@@ -1,0 +1,28 @@
+galaxy_info:
+  author: Nicolas CANIART
+  description: Ansible role to configure SSH authorization in bulk 
+  company: your company (optional)
+
+  issue_tracker_url: https://github.com/cans/ssh-authorize/issues
+  license: GPLv2
+
+  min_ansible_version: 1.2
+
+  github_branch: master
+
+  platforms:
+  - name: Debian
+    versions:
+    - jessie
+    - stretch
+    - sid
+
+  galaxy_tags:
+  - authorization
+  - authorized-keys
+  - bulk
+  - ssh
+  - ssh-key
+  - user-management
+
+dependencies: []

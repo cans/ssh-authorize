@@ -1,0 +1,32 @@
+---
+- hosts: servers
+  remote_user: root
+  vars:
+    username: "otheruser"
+  pre_tasks:
+    - user:
+        name: "{{username}}"
+        createhome: true
+        generate_ssh_key: true
+        home: "/home/{{username}}"
+        ssh_key_bits: "1024"  # Temporary throw away key, don't care if it is weak.
+        ssh_key_type: "rsa"
+        state: "present"
+
+    - name: "Create SSH Key for CI User"
+      command: "ssh-keygen -t rsa -b 1024 -f ${HOME}/.ssh/ansible-id_rsa2 -C 'remote@ci' -N ''"
+
+    - name: "Download CI User's SSH Key"
+      download
+
+  roles:
+    - role: "ssh-authorize"
+        sshauthz_keys_directory: "ssh-authz"
+        sshauthz_user_key_name: "ncaniart@workstation"
+      # notify: "add remote to know hosts"
+
+  tasks:
+    - authorized_key:
+        user: "{{username}}"
+        key: "/home/{{username}}/.ssh/ansible-id_rsa2.pub"
+        state: "present"

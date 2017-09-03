@@ -1,0 +1,7 @@
+---
+sshauthz_homes_dir: "/home"
+sshauthz_user: "{{ansible_user_id}}"
+sshauthz_group: "{{ansible_user_gid}}"
+sshauthz_ssh_config_dirname: ".ssh"
+sshauthz_authorized_keys_filename: "authorized_keys"
+sshauthz_keys_directory: "{{ playbook_dir + '/files/public_keys/default' }}"

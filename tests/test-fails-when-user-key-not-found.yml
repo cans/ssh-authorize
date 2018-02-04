@@ -1,0 +1,21 @@
+---
+- hosts: servers
+  gather_facts: false  # Cannot connect yet, anyway...
+  remote_user: "otheruser"
+  vars:
+    sshauthz_keys_directory: "/some/inexistant/directory"
+
+  roles:
+    - role: "ssh-authorize"
+      sshauthz_user_key_name: "id_rsa.pub"
+      ignore_error: True
+      register: result
+
+  tasks:
+    - name: "Ensure role fails if user key not found in '{{sshauthz_keys_directory}}'."
+      fail:
+         msg: "Role did not fail as expected !"
+      when: result|success
+
+
+# vim: et:sw=2:syntax=yaml:ts=2:

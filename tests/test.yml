@@ -1,32 +1,76 @@
 ---
-- hosts: servers
-  remote_user: root
+- hosts: localhost
+  gather_facts: false
   vars:
     username: "otheruser"
-  pre_tasks:
-    - user:
+  vars_files:
+    - ../defaults/main.yml
+  # Very important: SSH not ready yet soo we must to make any attempt to
+  # connection "remotely" (even on the loopback address)
+  connection: local
+  tasks:
+    - name: "Create a user on who's account setup authorization"
+      user:
         name: "{{username}}"
         createhome: true
-        generate_ssh_key: true
+        generate_ssh_key: false
         home: "/home/{{username}}"
-        ssh_key_bits: "1024"  # Temporary throw away key, don't care if it is weak.
-        ssh_key_type: "rsa"
         state: "present"
+      become: true
 
     - name: "Create SSH Key for CI User"
-      command: "ssh-keygen -t rsa -b 1024 -f ${HOME}/.ssh/ansible-id_rsa2 -C 'remote@ci' -N ''"
+      command: "ssh-keygen -t rsa -b 1024 -f {{ lookup('env', 'HOME') }}/.ssh/ansible-id_rsa2 -C 'remote@ci' -N ''"
 
-    - name: "Download CI User's SSH Key"
-      download
+    - name: "Create SSH Key for SSH Deamon"
+      command: "ssh-keygen -t rsa -b 1024 -f {{ playbook_dir }}/sshd/ssh_host_rsa_key -N ''"
 
-  roles:
-    - role: "ssh-authorize"
-        sshauthz_keys_directory: "ssh-authz"
-        sshauthz_user_key_name: "ncaniart@workstation"
-      # notify: "add remote to know hosts"
+    - name: "Create public key storage directory"
+      file:
+         dest: "{{ sshauthz_keys_directory }}"
+         state: directory
 
-  tasks:
-    - authorized_key:
-        user: "{{username}}"
-        key: "/home/{{username}}/.ssh/ansible-id_rsa2.pub"
-        state: "present"
+    - name: "Copy public key file"
+      copy:
+        src: "{{ lookup('env', 'HOME') }}/.ssh/ansible-id_rsa2.pub"
+        dest: "{{ sshauthz_keys_directory }}/id_rsa.pub"
+
+    - name: "Instanciate sshd_config template"
+      template:
+        src: "{{ playbook_dir }}/sshd/sshd_config.j2"
+        dest: "{{ playbook_dir }}/sshd/sshd_config"
+
+    - name: "Start SSH Daemon"
+      command: "/usr/sbin/sshd -f {{playbook_dir}}/sshd/sshd_config"
+
+    - name: "Save current user login name"
+      set_fact:
+        login_name: "{{ lookup('env', 'USER') or lookup('env', 'LOGIN') }}"
+
+    - name: "Allow to self to connect via ssh"
+      authorized_key:
+        user: "{{ login_name }}"
+        key: "{{ lookup('file', sshauthz_keys_directory + '/id_rsa.pub') }}"
+
+
+# - hosts: servers
+#   # gather_facts: false  # Cannot connect yet: public key not installed.
+#   remote_user: "{{ login_name }}"
+#   vars:
+#     ansible_user_id: "otheruser"  # Cheat cause since we cannot
+#
+#   roles:
+#     - role: "ssh-authorize"
+#       sshauthz_user_key_name: "id_rsa.pub"
+#
+#   tasks:
+#     - local_action:
+#         module: authorized_key
+#         user: "{{otheruser}}"
+#         key: "{{ lookup('env', 'HOME') }}/.ssh/id_rsa.pub"
+#         state: "present"
+#       become: yes
+#       register: result
+#       failed_when: result.changed
+
+
+# vim: et:sw=2:syntax=yaml:ts=2:

@@ -12,7 +12,7 @@
     msg: "Your public key `{{sshauthz_user_key_name}}' was not found in `{{sshauthz_keys_directory}}'."
   when: "user_public_key.stat.exists == False"
 
-- name: "Ensures User `~/.ssh/ directory exists"
+- name: "Ensures User `~/.ssh/' directory exists"
   file:
     path: "{{ sshauthz_homes_dir }}/{{ sshauthz_user }}/{{ sshauthz_ssh_config_dirname }}"
     owner: "{{ sshauthz_user }}"

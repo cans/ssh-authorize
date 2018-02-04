@@ -1,0 +1,25 @@
+---
+- hosts: servers
+  name: "Clean up"
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../defaults/main.yml
+  tasks:
+    - name: "Terminate ssh daemon"
+      command: "kill -TERM {{ lookup('file', 'sshd/sshd.pid') }}"
+      args:
+        chdir: "{{ playbook_dir }}"
+
+    - name: "Remove temp files"
+      command: "rm -f {{ lookup('env', 'HOME') }}/.ssh/ansible-id_rsa2 {{ lookup('env', 'HOME') }}/.ssh/ansible-id_rsa2.pub sshd/sshd_config sshd/ssh_host_rsa_key sshd/ssh_host_rsa_key.pub sshd/sshd.pid"
+      args:
+        chdir: "{{ playbook_dir }}"
+    - name: "Remove self authorization"
+      authorized_key:
+        user: "{{ lookup('env', 'USER') or lookup('env', 'LOGIN') }}"
+        key: "{{ lookup('file', sshauthz_keys_directory + '/id_rsa.pub') }}"
+        state: absent
+
+
+# vim: et:sw=2:syntax=yaml:ts=2:

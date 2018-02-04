@@ -1,15 +1,18 @@
 ---
 language: python
-python: "2.7"
+python:
+  - "2.7"
+  - "3.6"
 
 # Use the new container infrastructure
-sudo: false
+sudo: required
 
 # Install ansible
 addons:
   apt:
     packages:
     - python-pip
+    - openssh-server
 
 install:
   # Install ansible
@@ -19,11 +22,17 @@ install:
   - ansible --version
 
   # Create ansible.cfg with correct roles_path
-  - printf '[defaults]\nroles_path=../' >ansible.cfg
+  - printf '[defaults]\nhost_key_checking = False\nremote_port = 2222\nroles_path=../' >ansible.cfg
 
 script:
+  # Lint the role, but we don't want this to fail the build.
+  - ansible-lint tests/test.yml || true
   # Basic role syntax check
   - ansible-playbook tests/test.yml -i tests/inventory --syntax-check
+  # Then actually run a few tests
+  - ansible-playbook tests/test.yml -i tests/inventory
+  - '{ ansible-playbook tests/test-fails-when-user-key-not-found.yml -i tests/inventory ; res="$?" ; true ; } && test "0" -ne "${res}" || false'
+  - ansible-playbook tests/cleanup.yml -i tests/inventory
 
 notifications:
   webhooks: https://galaxy.ansible.com/api/v1/notifications/

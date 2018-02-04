@@ -1,0 +1,3 @@
+---
+sshauthz_keys_directory: "{{ playbook_dir + '/files/public_keys/default' }}"
+# sshauthz_user_key_name: "{{ omit }}"  # No default, it is mandatory to define this variable.

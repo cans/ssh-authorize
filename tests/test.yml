@@ -4,7 +4,7 @@
   vars:
     username: "otheruser"
   vars_files:
-    - ../defaults/main.yml
+    - ../vars/main.yml
   # Very important: SSH not ready yet soo we must to make any attempt to
   # connection "remotely" (even on the loopback address)
   connection: local
@@ -50,27 +50,34 @@
       authorized_key:
         user: "{{ login_name }}"
         key: "{{ lookup('file', sshauthz_keys_directory + '/id_rsa.pub') }}"
+    - name: "Wait for SSH to be ready"
+      wait_for:
+        host: "localhost"
+        port: 2222
+        state: "started"
 
 
-# - hosts: servers
-#   # gather_facts: false  # Cannot connect yet: public key not installed.
-#   remote_user: "{{ login_name }}"
-#   vars:
-#     ansible_user_id: "otheruser"  # Cheat cause since we cannot
-#
-#   roles:
-#     - role: "ssh-authorize"
-#       sshauthz_user_key_name: "id_rsa.pub"
-#
-#   tasks:
-#     - local_action:
-#         module: authorized_key
-#         user: "{{otheruser}}"
-#         key: "{{ lookup('env', 'HOME') }}/.ssh/id_rsa.pub"
-#         state: "present"
-#       become: yes
-#       register: result
-#       failed_when: result.changed
+- hosts: servers
+  gather_facts: false  # Cannot connect yet: public key not installed.
+  remote_user: "{{ login_name }}"
+  vars:
+    ansible_user_id: "otheruser"  # Cheat cause since we cannot
+
+  roles:
+    - role: "ssh-authorize"
+      sshauthz_user: "otheruser"
+      sshauthz_user_key_name: "id_rsa.pub"
+      become: yes
+
+  tasks:
+    - local_action:
+        module: authorized_key
+        user: "{{otheruser}}"
+        key: "{{ lookup('env', 'HOME') }}/.ssh/id_rsa.pub"
+        state: "present"
+      become: yes
+      register: result
+      failed_when: result.changed
 
 
 # vim: et:sw=2:syntax=yaml:ts=2:

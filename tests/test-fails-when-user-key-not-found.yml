@@ -4,9 +4,11 @@
   remote_user: "otheruser"
   vars:
     sshauthz_keys_directory: "/some/inexistant/directory"
+    ansible_user_id: "otheruser"  # Cheat
 
   roles:
     - role: "ssh-authorize"
+      sshauthz_user: "otheruser"
       sshauthz_user_key_name: "id_rsa.pub"
       ignore_error: True
       register: result
